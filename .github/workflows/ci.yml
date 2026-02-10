@@ -13,9 +13,9 @@ jobs:
       mysql:
         image: mysql:8.4
         env:
-          MYSQL_DATABASE: ${{ secrets.DB_NAME }}
-          MYSQL_USER: ${{ secrets.DB_USER }}
-          MYSQL_PASSWORD: ${{ secrets.DB_PASS }}
+          MYSQL_DATABASE: labo03_db
+          MYSQL_USER: labo03
+          MYSQL_PASSWORD: labo03
           MYSQL_ROOT_PASSWORD: root
         ports:
           - 3306:3306
@@ -23,7 +23,7 @@ jobs:
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
           --health-interval=5s
           --health-timeout=2s
-          --health-retries=25
+          --health-retries=30
 
       redis:
         image: redis:7
@@ -33,7 +33,7 @@ jobs:
           --health-cmd="redis-cli ping"
           --health-interval=5s
           --health-timeout=2s
-          --health-retries=25
+          --health-retries=30
 
     steps:
       - uses: actions/checkout@v4
@@ -48,16 +48,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Create .env from secrets (no quotes)
+      # Put .env inside src because you run pytest with working-directory: src
+      - name: Create hardcoded .env
         run: |
-          echo "DB_HOST=mysql" > .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
-          echo "REDIS_HOST=redis" >> .env
-          echo "REDIS_PORT=6379" >> .env
-          echo "REDIS_DB=${{ secrets.REDIS_DB }}" >> .env
+          cat > src/.env << 'EOF'
+          DB_HOST=mysql
+          DB_PORT=3306
+          DB_NAME=labo03_db
+          DB_USER=labo03
+          DB_PASS=labo03
+
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          REDIS_DB=0
+          EOF
+
+      - name: Sanity check DNS
+        run: |
+          getent hosts mysql
+          getent hosts redis
 
       - name: Run tests
         working-directory: src
