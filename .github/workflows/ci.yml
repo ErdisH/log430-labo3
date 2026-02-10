@@ -48,7 +48,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Put .env inside src because you run pytest with working-directory: src
       - name: Create hardcoded .env
         run: |
           cat > src/.env << 'EOF'
@@ -63,6 +62,14 @@ jobs:
           REDIS_DB=0
           EOF
 
+      - name: Debug services
+        run: |
+          echo "=== docker ps -a ==="
+          docker ps -a
+          echo "=== docker logs mysql (last 200 lines) ==="
+          docker logs "${{ job.services.mysql.id }}" --tail 200 || true
+          echo "=== docker logs redis (last 200 lines) ==="
+          docker logs "${{ job.services.redis.id }}" --tail 200 || true
       - name: Sanity check DNS
         run: |
           getent hosts mysql
