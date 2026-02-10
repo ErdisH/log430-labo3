@@ -1,5 +1,7 @@
 services:
   store_manager:
+    env_file:
+    - .env
     build: .
     environment:
       - PYTHONUNBUFFERED=1
