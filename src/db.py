@@ -20,7 +20,7 @@ def get_mysql_conn():
         host=config.DB_HOST,
         port=config.DB_PORT,
         user=config.DB_USER,
-        password=config.DB_PASSWORD,
+        password=config.DB_PASS,
         database=config.DB_NAME,
         auth_plugin='caching_sha2_password'
     )
