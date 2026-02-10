@@ -25,6 +25,7 @@ def get_mysql_conn():
         auth_plugin='caching_sha2_password'
     )
 
+
 def get_redis_conn():
     """Get a Redis connection using env variables"""
     return redis.Redis(connection_pool=pool, decode_responses=True)
