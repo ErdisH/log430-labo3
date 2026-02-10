@@ -10,6 +10,7 @@ from orders.controllers.order_controller import create_order, remove_order, get_
 from orders.controllers.user_controller import create_user, remove_user, get_user
 from stocks.controllers.product_controller import create_product, remove_product, get_product
 from stocks.controllers.stock_controller import get_stock, set_stock, get_stock_overview
+from stocks.commands.write_stock import sync_redis_from_mysql
  
 app = Flask(__name__)
 
@@ -103,6 +104,10 @@ def graphql_supplier():
         'data': result.data,
         'errors': [str(e) for e in result.errors] if result.errors else None
     })
+
+@app.before_request
+def warm_cache():
+    sync_redis_from_mysql()
 
 # Start Flask app
 if __name__ == '__main__':

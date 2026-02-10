@@ -5,6 +5,7 @@ Auteurs : Gabriel C. Ullmann, Fabio Petrillo, 2025
 """
 from sqlalchemy import text
 from stocks.models.stock import Stock
+from stocks.models.product import Product
 from db import get_redis_conn, get_sqlalchemy_session
 
 def set_stock_for_product(product_id, quantity):
@@ -80,7 +81,21 @@ def update_stock_redis(order_items, operation):
             else:
                 product_id = item['product_id']
                 quantity = item['quantity']
-            # TODO: ajoutez plus d'information sur l'article
+
+            session = get_sqlalchemy_session()
+                
+            try:
+                p = session.query(Product).filter(Product.id == product_id).first()
+            finally:
+                session.close()
+
+            if p:
+                pipeline.hset(f"stock:{product_id}", mapping={
+                    "name": p.name,
+                    "sku": p.sku,
+                    "price": str(p.price),
+            })
+                
             current_stock = r.hget(f"stock:{product_id}", "quantity")
             current_stock = int(current_stock) if current_stock else 0
             
@@ -122,5 +137,33 @@ def _populate_redis_from_mysql(redis_conn):
     except Exception as e:
         print(f"Erreur de synchronisation: {e}")
         raise e
+    finally:
+        session.close()
+
+def sync_redis_from_mysql():
+    r = get_redis_conn()
+    session = get_sqlalchemy_session()
+    try:
+        rows = (
+            session.query(
+                Product.id,
+                Product.name,
+                Product.sku,
+                Product.price,
+                Stock.quantity
+            )
+            .join(Stock, Stock.product_id == Product.id)
+            .all()
+        )
+
+        pipe = r.pipeline()
+        for row in rows:
+            pipe.hset(f"stock:{row.id}", mapping={
+                "name": row.name,
+                "sku": row.sku,
+                "price": str(row.price),
+                "quantity": int(row.quantity),
+            })
+        pipe.execute()
     finally:
         session.close()
