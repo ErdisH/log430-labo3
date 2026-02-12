@@ -26,6 +26,7 @@ jobs:
 
       - name: Build and start containers
         run: |
+          docker network create labo03-network
           docker compose down
           docker compose build
           docker compose up -d
